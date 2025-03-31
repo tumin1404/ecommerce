@@ -24,12 +24,11 @@ class CategoryController extends Controller
     // Thêm danh mục mới
     public function store(Request $request)
     {
-
-        $data = $request->validate(rules: [
+        $data = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:category,id',
-            'thumbnail' => 'nullable|image|max:4048', // Ảnh tối đa 2MB
+            'thumbnail' => 'nullable|image|max:4048', // Ảnh tối đa 4MB
         ]);
 
         if ($request->hasFile('thumbnail')) {
@@ -39,8 +38,14 @@ class CategoryController extends Controller
             $data['thumbnail'] = $fileName;
         }
 
-        Category::create($data);
-        return response()->json(['message' => 'Thêm danh mục thành công!']);
+        $category = Category::create($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Thêm danh mục thành công!',
+            'category' => $category,
+            'parent_name' => $category->parent ? $category->parent->name : 'Không có', // Lấy tên danh mục cha
+        ]);
     }
 
     // Cập nhật danh mục
@@ -71,7 +76,12 @@ class CategoryController extends Controller
             $data['thumbnail'] = $category->thumbnail;
         }
         $category->update($data);
-        return response()->json(data: ['success' => true ,'data' => $data ,'data2' =>   $category]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật danh mục thành công!',
+            'category' => $category,
+            'parent_name' => $category->parent ? $category->parent->name : 'Không có', // Lấy tên danh mục cha
+        ]);
     }
 
     // Xóa danh mục

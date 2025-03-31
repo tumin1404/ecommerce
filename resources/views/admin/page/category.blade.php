@@ -237,16 +237,50 @@
         }
         let url = action === "edit" ? "/admin/category/" + id : "/admin/category";
         
-        let method = action === "edit" ? "PUT" : "POST";
-        console.log("Dữ liệu FormData gửi đi:");
+        let method = action === "edit" ? "POST" : "POST";
+
         $.ajax({
             url: url,
-            type: 'POST',
+            type: method,
             data: formData,
             processData: false,
             contentType: false,
             success: function (res) {
-              location.reload();
+                if (res.success) {
+                    alert(res.message);
+
+                    if (action === "create") {
+                        // Thêm hàng mới vào bảng
+                        let newRow = `
+                            <tr>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary btn-view" data-id="${res.category.id}">Xem</button>
+                                </td>
+                                <td class="text-center">${$("table tbody tr").length + 1}</td>
+                                <td class="text-center">${res.category.name}</td>
+                                <td>${res.category.description}</td>
+                                <td class="text-center">
+                                    <img src="/images/categories/${res.category.thumbnail}" width="50" height="50" alt="Thumbnail">
+                                </td>
+                                <td class="text-center">${res.parent_name}</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-primary btn-edit" data-id="${res.category.id}">Sửa</button>
+                                    <button type="button" class="btn btn-sm btn-danger btn-delete" data-id="${res.category.id}">Xóa</button>
+                                </td>
+                            </tr>
+                        `;
+                        $("table tbody").append(newRow);
+                    } else if (action === "edit") {
+                        // Cập nhật hàng hiện tại
+                        let row = $(`button[data-id="${id}"]`).closest("tr");
+                        row.find("td:nth-child(3)").text(res.category.name);
+                        row.find("td:nth-child(4)").text(res.category.description);
+                        row.find("td:nth-child(5) img").attr("src", "/images/categories/" + res.category.thumbnail);
+                        row.find("td:nth-child(6)").text(res.parent_name);
+                    }
+
+                    $("#defaulModal").modal("hide");
+                }
             },
             error: function (xhr) {
                 console.log(xhr.responseText);
