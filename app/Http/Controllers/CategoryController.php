@@ -24,11 +24,12 @@ class CategoryController extends Controller
     // Thêm danh mục mới
     public function store(Request $request)
     {
-        $data = $request->validate([
+
+        $data = $request->validate(rules: [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'parent_id' => 'nullable|exists:categories,id',
-            'thumbnail' => 'nullable|image|max:2048', // Ảnh tối đa 2MB
+            'parent_id' => 'nullable|exists:category,id',
+            'thumbnail' => 'nullable|image|max:4048', // Ảnh tối đa 2MB
         ]);
 
         if ($request->hasFile('thumbnail')) {
@@ -45,15 +46,16 @@ class CategoryController extends Controller
     // Cập nhật danh mục
     public function update(Request $request, $id)
     {
-        $category = Category::findOrFail($id);
-
+        $category = Category::find($id);
+        if (!$category) {
+            return response()->json(['error' => 'Danh mục không tồn tại'], 404);
+        }    
         $data = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'parent_id' => 'nullable|exists:categories,id',
-            'thumbnail' => 'nullable|image|max:2048',
-        ]);
-
+            'parent_id' => 'nullable|exists:category,id',
+            'thumbnail' => 'nullable|image|max:4048',
+        ]); 
         if ($request->hasFile('thumbnail')) {
             // Xóa ảnh cũ nếu có
             if ($category->thumbnail && file_exists(public_path('images/categories/' . $category->thumbnail))) {
@@ -64,8 +66,32 @@ class CategoryController extends Controller
             $fileName = time() . '.' . $file->extension();
             $file->move(public_path('images/categories/'), $fileName);
             $data['thumbnail'] = $fileName;
+        }else {
+            // Nếu không có ảnh mới, giữ nguyên ảnh cũ
+            $data['thumbnail'] = $category->thumbnail;
         }
-        $category->update($request->all());
-        return response()->json(['success' => true]);
+        $category->update($data);
+        return response()->json(data: ['success' => true ,'data' => $data ,'data2' =>   $category]);
+    }
+
+    // Xóa danh mục
+    public function destroy($id)
+    {
+        try {
+            $category = Category::findOrFail($id);
+
+            // Xóa hình ảnh nếu tồn tại
+            if ($category->thumbnail && file_exists(public_path('images/categories/' . $category->thumbnail))) {
+                unlink(public_path('images/categories/' . $category->thumbnail));
+            }
+
+            $category->delete();
+
+            // Trả về phản hồi JSON thành công
+            return response()->json(['success' => 'Danh mục đã được xóa thành công.']);
+        } catch (\Exception $e) {
+            // Trả về phản hồi JSON lỗi
+            return response()->json(['error' => 'Không thể xóa danh mục.'], 500);
+        }
     }
 }

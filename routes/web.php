@@ -43,6 +43,7 @@ Route::get('/admin/home', function () {
 Route::get('/admin/category', [CategoryController::class, 'index'])->name('admin.category.index');
 Route::get('/admin/category/{id}', [CategoryController::class, 'show']);
 Route::post('/admin/category', [CategoryController::class, 'store']);
-Route::put('/admin/category/{id}', [CategoryController::class, 'update']);
+Route::post('/admin/category/{id}', [CategoryController::class, 'update'])->whereNumber('id');
+Route::delete('/admin/category/{id}', [CategoryController::class, 'destroy'])->name('admin.category.destroy');
 
 

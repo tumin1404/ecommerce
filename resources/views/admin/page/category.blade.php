@@ -1,6 +1,15 @@
 @extends('admin.layout')
 @section('content')
-
+@if(session('success'))
+    <div class="alert alert-success">
+        {{ session('success') }}
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger">
+        {{ session('error') }}
+    </div>
+@endif
 <h1 class="text-center my-4">QUẢN LÝ DANH MỤC</h1>
 <button type="button" class="btn mb-2 btn-outline-primary btn-create">
     <span class="fe fe-plus fe-16 mr-2"></span>Thêm mới
@@ -64,7 +73,7 @@
                 @endif
             </tbody>
           </table>
-          <nav aria-label="Table Paging" class="mb-0 text-muted">
+          {{-- <nav aria-label="Table Paging" class="mb-0 text-muted">
             <ul class="pagination justify-content-center mb-0">
               <li class="page-item"><a class="page-link" href="#">Previous</a></li>
               <li class="page-item active"><a class="page-link" href="#">1</a></li>
@@ -72,7 +81,7 @@
               <li class="page-item"><a class="page-link" href="#">3</a></li>
               <li class="page-item"><a class="page-link" href="#">Next</a></li>
             </ul>
-          </nav>
+          </nav> --}}
         </div>
       </div>
     </div>
@@ -218,28 +227,55 @@
         let action = $(this).attr("data-action");
         let id = $(this).attr("data-id");
         let formData = new FormData();
+        
         formData.append("name", $("#modal-name").val());
         formData.append("description", $("#modal-description").val());
         formData.append("parent_id", $("#modal-parent").val());
-        formData.append("thumbnail", $("#customFile")[0].files[0]);
-
+        let file = $("#customFile")[0].files[0];
+        if (file) {
+          formData.append("thumbnail", file);
+        }
         let url = action === "edit" ? "/admin/category/" + id : "/admin/category";
+        
         let method = action === "edit" ? "PUT" : "POST";
-
+        console.log("Dữ liệu FormData gửi đi:");
         $.ajax({
             url: url,
-            type: method,
+            type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
-            success: function () {
-                location.reload();
+            success: function (res) {
+              location.reload();
             },
             error: function (xhr) {
                 console.log(xhr.responseText);
                 alert("Lỗi: " + xhr.responseText);
             },
         });
+    });
+
+    // Xử lý khi click "Xóa"
+    $(".btn-delete").on("click", function () {
+        let id = $(this).data("id");
+
+        if (confirm("Bạn có chắc chắn muốn xóa danh mục này không?")) {
+            $.ajax({
+                url: "/admin/category/" + id,
+                type: "DELETE",
+                headers: {
+                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
+                },
+                success: function (res) {
+                    alert(res.success);
+                    location.reload();
+                },
+                error: function (xhr) {
+                    console.log(xhr.responseText);
+                    alert("Lỗi: Không thể xóa danh mục.");
+                },
+            });
+        }
     });
 });
 
