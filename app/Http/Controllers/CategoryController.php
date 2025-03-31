@@ -88,10 +88,17 @@ class CategoryController extends Controller
             $category->delete();
 
             // Trả về phản hồi JSON thành công
-            return response()->json(['success' => 'Danh mục đã được xóa thành công.']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Danh mục đã được xóa thành công.',
+                'id' => $id // Trả về ID của danh mục đã xóa để xóa hàng tương ứng trên giao diện
+            ]);
         } catch (\Exception $e) {
             // Trả về phản hồi JSON lỗi
-            return response()->json(['error' => 'Không thể xóa danh mục.'], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa danh mục. Vui lòng thử lại sau.'
+            ], 500);
         }
     }
 }

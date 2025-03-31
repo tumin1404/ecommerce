@@ -261,16 +261,24 @@
 
         if (confirm("Bạn có chắc chắn muốn xóa danh mục này không?")) {
             $.ajax({
-                url: "/admin/category/" + id,
-                type: "DELETE",
+                url: "/admin/category/" + id, // URL API xóa danh mục
+                type: "DELETE", // Phương thức HTTP DELETE
                 headers: {
-                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
+                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"), // CSRF token
                 },
                 success: function (res) {
-                    alert(res.success);
-                    location.reload();
+                    if (res.success) {
+                        // Hiển thị thông báo thành công
+                        alert(res.message);
+
+                        // Xóa hàng tương ứng khỏi bảng
+                        $(`button[data-id="${res.id}"]`).closest("tr").remove();
+                    } else {
+                        alert("Lỗi: " + res.message);
+                    }
                 },
                 error: function (xhr) {
+                    // Hiển thị lỗi nếu có
                     console.log(xhr.responseText);
                     alert("Lỗi: Không thể xóa danh mục.");
                 },
