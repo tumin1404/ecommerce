@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Category;
+use Illuminate\Support\Facades\Log;
 
 class CategoryController extends Controller
 {
@@ -20,6 +21,22 @@ class CategoryController extends Controller
         $category = Category::findOrFail($id);
         return response()->json($category);
     }
+    public function search(Request $request)
+    {
+              $query = Category::query();
+                if ($request->filled('keyword')) {
+                   $query->where('name', 'like', value: '%' . $request->keyword . '%');
+                }
+                else{
+                    $categories = Category::all();
+                    return response()->json($categories);
+                }
+              $categories = $query->paginate(10);
+            return response()->json($categories);
+    }
+
+    // Tìm kiếm danh mục
+   
 
     // Thêm danh mục mới
     public function store(Request $request)

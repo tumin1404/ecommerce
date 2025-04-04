@@ -39,7 +39,10 @@ Route::get('/test', function () {
 Route::get('/admin/home', function () {
     return view('admin.page.home');
 });
-
+Route::get('/admin/test', function () {
+    return view('admin.page.test');
+});
+Route::get('/admin/category/search', [CategoryController::class, 'search']);
 Route::get('/admin/category', [CategoryController::class, 'index'])->name('admin.category.index');
 Route::get('/admin/category/{id}', [CategoryController::class, 'show']);
 Route::post('/admin/category', [CategoryController::class, 'store']);
