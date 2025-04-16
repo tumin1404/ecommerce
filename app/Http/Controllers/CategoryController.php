@@ -5,14 +5,16 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Category;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Pagination\Paginator;
 class CategoryController extends Controller
 {
     // Hiển thị danh sách danh mục
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::all();
-        return view('admin.page.category', compact('categories'));
+        $perPage = $request->get('perPage', 10);
+        $categories = Category::paginate($perPage);
+
+        return view('admin.page.category', compact('categories', 'perPage'));
     }
 
     // Lấy thông tin 1 danh mục (Xem)
@@ -23,16 +25,17 @@ class CategoryController extends Controller
     }
     public function search(Request $request)
     {
-              $query = Category::query();
-                if ($request->filled('keyword')) {
-                   $query->where('name', 'like', value: '%' . $request->keyword . '%');
-                }
-                else{
-                    $categories = Category::all();
-                    return response()->json($categories);
-                }
-              $categories = $query->paginate(10);
-            return response()->json($categories);
+        $query = Category::query();
+
+        // Kiểm tra nếu có từ khóa tìm kiếm
+        if ($request->filled('keyword') && $request->keyword !== '') {
+            $query->where('name', 'like', '%' . $request->keyword . '%');
+        }
+
+        // Nếu không có từ khóa tìm kiếm, lấy toàn bộ dữ liệu
+        $categories = $request->filled('keyword') ? $query->get() : Category::all();
+
+        return response()->json($categories);
     }
 
     // Tìm kiếm danh mục

@@ -9,16 +9,27 @@
       <div class="card shadow">
       <div class="card-body">
         <div class="toolbar d-flex justify-content-between align-items-center mb-3">
-        <button type="button" class="btn btn-outline-primary btn-create">
-          <span class="fe fe-plus fe-16 me-2"></span>Thêm mới
-        </button>
-        <form class="form col-3" id="searchForm">
-          <div class="form-group position-relative">
-            <label for="searchInput" class="sr-only">Tìm kiếm</label>
-            <input type="text" class="form-control" id="searchInput" 
-               placeholder="Nhập từ khóa..." autocomplete="off">
+          <form method="GET" action="{{ route('admin.category.index') }}" class="d-flex align-items-center">
+              <label class="my-1 me-2" for="perPage">Show</label>
+              <select class="form-select me-2" name="perPage" id="perPage" onchange="this.form.submit()" style="width: 80px;">
+                <option value="10" {{ $perPage == 10 ? 'selected' : '' }}>10</option>
+                <option value="20" {{ $perPage == 20 ? 'selected' : '' }}>20</option>
+                <option value="50" {{ $perPage == 50 ? 'selected' : '' }}>50</option>
+                <option value="100" {{ $perPage == 100 ? 'selected' : '' }}>100</option>
+              </select>
+          </form>
+          <div class="d-flex align-items-center">
+            <button type="button" class="btn btn-outline-primary btn-create me-3">
+              <span class="fe fe-plus fe-16 me-2"></span>Thêm mới
+            </button>
+            <form class="form mb-0" id="searchForm">
+              <div class="form-group position-relative mb-0">
+                <label for="searchInput" class="sr-only">Tìm kiếm</label>
+                <input type="text" class="form-control" id="searchInput" 
+                  placeholder="Nhập từ khóa..." autocomplete="off">
+              </div>
+            </form>
           </div>
-        </form>
         </div>
         <!-- table -->
         <table class="table table-hover table-bordered border-v">
@@ -64,6 +75,31 @@
           @endif
         </tbody>
         </table>
+        <nav aria-label="Table Paging" class="mb-0 text-muted">
+          <ul class="pagination justify-content-center mb-0">
+
+              {{-- Previous --}}
+              <li class="page-item {{ $categories->onFirstPage() ? 'disabled' : '' }}">
+                  <a class="page-link" href="{{ $categories->previousPageUrl() ?? '#' }}" tabindex="-1">Previous</a>
+              </li>
+
+              {{-- Page Numbers --}}
+              @for ($i = 1; $i <= $categories->lastPage(); $i++)
+                  <li class="page-item {{ $categories->currentPage() == $i ? 'active' : '' }}">
+                      <a class="page-link" href="{{ $categories->url($i) }}">{{ $i }}</a>
+                  </li>
+              @endfor
+
+              {{-- Next --}}
+              <li class="page-item {{ !$categories->hasMorePages() ? 'disabled' : '' }}">
+                  <a class="page-link" href="{{ $categories->nextPageUrl() ?? '#' }}">Next</a>
+              </li>
+          </ul>
+        </nav>
+
+        <!-- <nav aria-label="Table Paging" class="pagination mb-0 text-muted justify-content-center">
+          {{ $categories->appends(['perPage' => $perPage])->links() }}
+        </nav> -->
       </div>
       </div>
     </div>
@@ -288,8 +324,10 @@
             if (action === "create") {
               let newRow = `
                 <tr>
-                  <td>
-                    <button type="button" class="btn btn-sm btn-primary btn-view" data-id="${res.category.id}">Xem</button>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-view" data-id="${res.category.id}">
+                      <span class="fe fe-eye me-1"></span>Xem
+                    </button>
                   </td>
                   <td class="text-center">${$("table tbody tr").length + 1}</td>
                   <td class="text-center">${res.category.name}</td>
@@ -299,8 +337,12 @@
                   </td>
                   <td class="text-center">${res.parent_name}</td>
                   <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-primary btn-edit" data-id="${res.category.id}">Sửa</button>
-                    <button type="button" class="btn btn-sm btn-danger btn-delete" data-id="${res.category.id}">Xóa</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-edit" data-id="${res.category.id}">
+                      <span class="fe fe-edit me-1"></span>Sửa
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete" data-id="${res.category.id}">
+                      <span class="fe fe-trash-2 me-1"></span>Xóa
+                    </button>
                   </td>
                 </tr>
               `;
@@ -313,7 +355,15 @@
               let row = $(`button[data-id="${id}"]`).closest("tr");
               row.find("td:nth-child(3)").text(res.category.name);
               row.find("td:nth-child(4)").text(res.category.description);
-              row.find("td:nth-child(5) img").attr("src", "/images/categories/" + res.category.thumbnail);
+              
+              // Update thumbnail image
+              let thumbnailCell = row.find("td:nth-child(5)");
+              if (res.category.thumbnail) {
+                thumbnailCell.html(`<img src="/images/categories/${res.category.thumbnail}" width="50" height="50" alt="Thumbnail">`);
+              } else {
+                thumbnailCell.html('');
+              }
+              
               row.find("td:nth-child(6)").text(res.parent_name);
 
               $(`#modal-parent option[value="${id}"]`).text(res.category.name);
@@ -336,20 +386,21 @@
       clearTimeout(searchTimeout);
       let query = $(this).val().trim();
       $("table tbody").html(`<tr><td colspan="7" class="text-center">Đang tìm kiếm...</td></tr>`);
+
       searchTimeout = setTimeout(() => {
-      $.ajax({
-        url: "/admin/category/search",  // Route tìm kiếm
-        type: "GET",
-        data: { keyword: query },
-        dataType: "json",
-        success: function (res) {
-        $("table tbody").empty();
-        if (res.data && res.data.length > 0) {
-          res.data.forEach((category, index) => {
-          let newRow = `
+        $.ajax({
+          url: "/admin/category/search",  // Route tìm kiếm
+          type: "GET",
+          data: { keyword: query || '' },  // Truyền từ khóa tìm kiếm hoặc chuỗi rỗng nếu không có
+          dataType: "json",
+          success: function (res) {
+            $("table tbody").empty();
+            if (res.length > 0) {  // Kiểm tra dữ liệu trả về từ server
+              res.forEach((category, index) => {
+                let newRow = `
                   <tr>
                     <td class="text-center">
-                      <button class="btn btn-sm btn-outline-primary btn-view" data-id="${category.id}">
+                      <button type="button" class="btn btn-sm btn-outline-primary btn-view" data-id="${category.id}">
                         <span class="fe fe-eye me-1"></span>Xem
                       </button>
                     </td>
@@ -361,28 +412,85 @@
                     </td>
                     <td class="text-center">${category.parent_name || "Không có"}</td>
                     <td class="text-center">
-                      <button class="btn btn-sm btn-outline-primary btn-edit" data-id="${category.id}">
+                      <button type="button" class="btn btn-sm btn-outline-primary btn-edit" data-id="${category.id}">
                         <span class="fe fe-edit me-1"></span>Sửa
                       </button>
-                      <button class="btn btn-sm btn-outline-danger btn-delete" data-id="${category.id}">
+                      <button type="button" class="btn btn-sm btn-outline-danger btn-delete" data-id="${category.id}">
                         <span class="fe fe-trash-2 me-1"></span>Xóa
                       </button>
                     </td>
                   </tr>
                 `;
-          $("table tbody").append(newRow);
-          });
-        } else {
-          $("table tbody").html(`<tr><td colspan="7" class="text-center">Không có kết quả.</td></tr>`);
-        }
-        },
-        error: function (xhr) {
-        $("table tbody").html(`<tr><td colspan="7" class="text-center text-danger">Lỗi: Không thể tìm kiếm.</td></tr>`);
-        console.error("Lỗi tìm kiếm:", xhr.responseText);
-        }
-      });
+                $("table tbody").append(newRow);
+              });
+            } else {
+              $("table tbody").html(`<tr><td colspan="7" class="text-center">Không có kết quả.</td></tr>`);
+            }
+
+            // Gắn lại sự kiện click cho các nút Xem và Sửa sau khi bảng được cập nhật
+            bindEventHandlers(); // Gọi hàm gắn sự kiện
+
+          },
+          error: function (xhr) {
+            $("table tbody").html(`<tr><td colspan="7" class="text-center text-danger">Lỗi: Không thể tìm kiếm.</td></tr>`);
+            console.error("Lỗi tìm kiếm:", xhr.responseText);
+          }
+        });
       }, 300); // Debounce 300ms
     });
+
+    // Hàm gắn sự kiện cho các nút Xem và Sửa
+    function bindEventHandlers() {
+      // Xử lý khi click "Xem"
+      $(".btn-view").on("click", function () {
+        let id = $(this).data("id");
+
+        $.get("/admin/category/" + id, function (data) {
+          if (data) {
+            $("#defaultModalLabel").text("Chi tiết danh mục");
+            $("#modal-name").val(data.name).prop("disabled", true);
+            $("#modal-description").val(data.description).prop("disabled", true);
+            $("#modal-parent").val(data.parent_id).prop("disabled", true);
+            $("#modal-thumbnail").attr("src", "/images/categories/" + data.thumbnail);
+
+            $(".custom-file-label").text(data.thumbnail);
+            $("#customFile").val("").prop("disabled", true);
+
+            $(".btn-save").hide();
+            $("#defaulModal").modal("show");
+          } else {
+            showToast("danger", "Không tìm thấy danh mục!", "fe fe-x-circle");
+          }
+        }).fail(function () {
+          showToast("danger", "Lỗi: Không thể tải dữ liệu danh mục.", "fe fe-x-circle");
+        });
+      });
+
+      // Xử lý khi click "Sửa"
+      $(".btn-edit").on("click", function () {
+        let id = $(this).data("id");
+
+        $.get("/admin/category/" + id, function (data) {
+          if (data) {
+            $("#defaultModalLabel").text("Sửa danh mục");
+            $("#modal-name").val(data.name).prop("disabled", false);
+            $("#modal-description").val(data.description).prop("disabled", false);
+            $("#modal-parent").val(data.parent_id).prop("disabled", false);
+            $("#modal-thumbnail").attr("src", "/images/categories/" + data.thumbnail);
+
+            $(".custom-file-label").text(data.thumbnail);
+            $("#customFile").val("").prop("disabled", false);
+
+            $(".btn-save").attr("data-action", "edit").attr("data-id", id).show();
+            $("#defaulModal").modal("show");
+          } else {
+            showToast("danger", "Không tìm thấy danh mục!", "fe fe-x-circle");
+          }
+        }).fail(function () {
+          showToast("danger", "Lỗi: Không thể tải dữ liệu danh mục.", "fe fe-x-circle");
+        });
+      });
+    }
 
     // Xử lý khi click "Xóa"
     let deleteId = null; // Biến lưu trữ ID của danh mục cần xóa
